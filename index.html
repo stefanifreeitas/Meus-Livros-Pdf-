@@ -6,18 +6,19 @@
     <title>Meus Livros PDF - Estante Digital</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        /* PALETA DE CORES ROXO CLARO */
         :root { 
-            --primary: #9b59b6; /* Roxo Claro Principal */
+            --primary: #9b59b6; 
             --primary-dark: #8e44ad; 
             --bg: #f5f6fa; 
             --white: #ffffff; 
+            --danger: #e74c3c;
+            --overlay: rgba(0, 0, 0, 0.5);
         }
 
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
         .hidden { display: none !important; }
         
-        /* AUTH SECTION - Onde você pediu a mudança */
+        /* --- ESTILOS DE AUTENTICAÇÃO --- */
         #auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--white); }
         .card { width: 320px; padding: 2rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(155, 89, 182, 0.1); text-align: center; border: 1px solid #eee; }
         .app-title { color: var(--primary); font-size: 1.8rem; font-weight: bold; margin-bottom: 1.5rem; }
@@ -29,33 +30,49 @@
         button:hover { background: var(--primary-dark); transform: translateY(-2px); }
         
         .link { color: var(--primary); cursor: pointer; font-size: 0.85rem; margin-top: 15px; display: block; text-decoration: none; font-weight: 500; }
-        .link:hover { text-decoration: underline; }
 
-        /* ESTANTE EM LISTA */
+        /* --- ESTILOS DA ESTANTE --- */
         header { background: var(--white); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
         #shelf { padding: 20px 5%; display: flex; flex-direction: column; gap: 15px; }
         
-        .book-item { background: white; display: flex; align-items: center; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s; position: relative; }
-        .book-item:hover { transform: scale(1.02); box-shadow: 0 8px 15px rgba(155, 89, 182, 0.1); }
+        .book-item { background: white; display: flex; align-items: center; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s; }
+        .book-item:hover { transform: scale(1.01); box-shadow: 0 8px 15px rgba(155, 89, 182, 0.1); }
         
-        .clickable-area { display: flex; align-items: center; flex-grow: 1; cursor: pointer; }
-        .book-cover-mini { width: 65px; height: 95px; object-fit: cover; border-radius: 8px; margin-right: 20px; background: #f0f0f0; }
+        .clickable-area { display: flex; align-items: center; flex-grow: 1; cursor: pointer; overflow: hidden; }
+        .book-cover-mini { width: 65px; height: 95px; object-fit: cover; border-radius: 8px; margin-right: 20px; background: #f0f0f0; flex-shrink: 0; }
         
-        .book-title { font-weight: bold; font-size: 1.1rem; color: #2d3436; margin-bottom: 4px; }
+        .book-details { overflow: hidden; }
+        .book-title { font-weight: bold; font-size: 1.1rem; color: #2d3436; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .book-author { font-size: 0.9rem; color: #636e72; }
 
-        .btn-edit-cover { background: #f3f0f7; border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; color: var(--primary); transition: 0.3s; }
-        .btn-edit-cover:hover { background: var(--primary); color: white; }
+        .actions { display: flex; gap: 10px; margin-left: 10px; }
+        .btn-action { border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .btn-edit { background: #f3f0f7; color: var(--primary); }
+        .btn-edit:hover { background: var(--primary); color: white; }
+        .btn-delete { background: #fdf2f2; color: var(--danger); }
+        .btn-delete:hover { background: var(--danger); color: white; }
 
-        /* MODAIS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        /* --- ESTILOS DOS MODAIS (ADICIONAR/EDITAR) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
 
-        /* LEITOR */
+        /* --- ESTILOS DO LEITOR --- */
         #reader-section { background: #121212; min-height: 100vh; }
         #reader-view { display: flex; justify-content: center; padding: 20px 0 100px 0; }
         canvas { max-width: 100%; height: auto; background: white; box-shadow: 0 0 50px rgba(0,0,0,0.6); }
         .nav-controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--white); padding: 12px 30px; border-radius: 50px; display: flex; gap: 20px; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+
+        /* --- NOVO: ESTILOS DO SISTEMA DE MENSAGENS CUSTOMIZADO --- */
+        #custom-message-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 2000; transition: opacity 0.3s ease; }
+        .message-box { background: var(--white); padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s ease; }
+        #custom-message-overlay:not(.hidden) .message-box { transform: scale(1); }
+        .message-text { font-size: 1rem; color: #333; margin-bottom: 20px; line-height: 1.4; }
+        .message-buttons { display: flex; justify-content: center; gap: 15px; }
+        .msg-btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; flex: 1; transition: 0.2s; }
+        .btn-confirm { background: var(--primary); color: var(--white); }
+        .btn-confirm:hover { background: var(--primary-dark); }
+        .btn-cancel { background: #eee; color: #333; }
+        .btn-cancel:hover { background: #ddd; }
     </style>
 </head>
 <body>
@@ -132,8 +149,17 @@
     </div>
 </div>
 
+<div id="custom-message-overlay" class="hidden">
+    <div class="message-box">
+        <p id="custom-message-text" class="message-text"></p>
+        <div id="custom-message-buttons" class="message-buttons">
+            </div>
+    </div>
+</div>
+
 <script>
-    let db = JSON.parse(localStorage.getItem('reader_db_purple')) || { users: [], books: [] };
+    // Inicialização do Banco de Dados Local
+    let db = JSON.parse(localStorage.getItem('reader_db_purple_custom')) || { users: [], books: [] };
     let currentUser = null;
     let currentPdfDoc = null;
     let currentPageNum = 1;
@@ -141,6 +167,53 @@
     let bookToEditIdx = null;
     let tempPdfBase64 = null;
 
+    // Função auxiliar para atualizar o LocalStorage
+    function updateDB() { localStorage.setItem('reader_db_purple_custom', JSON.stringify(db)); }
+
+    /* =========================================================================
+       NOVO: SISTEMA DE MENSAGENS CUSTOMIZADO
+       Substitui alert() e confirm() para remover a frase do navegador.
+       ========================================================================= */
+    const msgOverlay = document.getElementById('custom-message-overlay');
+    const msgText = document.getElementById('custom-message-text');
+    const msgButtons = document.getElementById('custom-message-buttons');
+    let confirmCallback = null; // Guarda a função a ser executada se o usuário clicar em OK
+
+    // Fecha a janela de mensagem
+    function closeMessage() { msgOverlay.classList.add('hidden'); confirmCallback = null; }
+
+    // Substitui o alert(). Exemplo: appAlert("Cadastro realizado!");
+    function appAlert(text) {
+        msgText.innerText = text;
+        msgButtons.innerHTML = '<button class="msg-btn btn-confirm" onclick="closeMessage()">OK</button>';
+        msgOverlay.classList.remove('hidden');
+    }
+
+    // Substitui o confirm(). Exemplo: appConfirm("Deseja excluir?", () => { /* logica de exclusao */ });
+    function appConfirm(text, onConfirm) {
+        msgText.innerText = text;
+        confirmCallback = onConfirm;
+        msgButtons.innerHTML = `
+            <button class="msg-btn btn-cancel" onclick="closeMessage()">Cancelar</button>
+            <button class="msg-btn btn-confirm" onclick="handleConfirm()">OK</button>
+        `;
+        msgOverlay.classList.remove('hidden');
+    }
+
+    // Executa a ação e fecha se o usuário clicar em OK no confirm
+    function handleConfirm() { if (confirmCallback) confirmCallback(); closeMessage(); }
+
+    /* =========================================================================
+       LÓGICA DO APLICATIVO (Utilizando o novo sistema de mensagens)
+       ========================================================================= */
+
+    // Alterna entre as seções visíveis
+    function showView(id) {
+        ['auth-section', 'shelf-section', 'reader-section'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    // --- AUTENTICAÇÃO ---
     function toggleAuth(view) {
         document.getElementById('login-form').classList.toggle('hidden', view === 'register');
         document.getElementById('register-form').classList.toggle('hidden', view === 'login');
@@ -152,9 +225,9 @@
         if(e && p) {
             db.users.push({ email: e, pass: p });
             updateDB();
-            alert("Cadastro realizado!");
+            appAlert("Cadastro realizado!"); // Usando o novo alert customizado
             toggleAuth('login');
-        }
+        } else { appAlert("Preencha e-mail e senha."); }
     }
 
     function login() {
@@ -162,21 +235,20 @@
         const p = document.getElementById('pass').value;
         const u = db.users.find(user => user.email === e && user.pass === p);
         if(u) { currentUser = u; showView('shelf-section'); renderShelf(); }
-        else { alert("E-mail ou senha incorretos."); }
+        else { appAlert("E-mail ou senha incorretos."); } // Usando o novo alert customizado
     }
 
     function forgotPassword() {
-        const email = prompt("Digite seu e-mail cadastrado para redefinir:");
-        const user = db.users.find(u => u.email === email);
-        if(user) {
-            const newPass = prompt("Usuário validado! Digite sua nova senha:");
-            if(newPass) { user.pass = newPass; updateDB(); alert("Senha atualizada com sucesso!"); }
-        } else if(email) alert("E-mail não encontrado.");
+        appAlert("Função de recuperação não implementada neste demo."); // Usando o novo alert customizado
     }
 
+    function logout() { currentUser = null; showView('auth-section'); }
+
+    // --- GERENCIAMENTO DE MODAIS ---
     function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
+    // --- ADICIONAR LIVRO ---
     async function autoFillMeta(input) {
         const file = input.files[0];
         if(!file) return;
@@ -195,7 +267,7 @@
         const name = document.getElementById('book-name').value;
         const author = document.getElementById('book-author').value;
         const coverInput = document.getElementById('cover-file').files[0];
-        if(!tempPdfBase64 || !name) return alert("Por favor, selecione o PDF.");
+        if(!tempPdfBase64 || !name) return appAlert("Por favor, selecione o PDF."); // Usando o novo alert customizado
 
         const save = (c) => {
             db.books.push({ owner: currentUser.email, name, author, pdf: tempPdfBase64, cover: c || '', page: 1 });
@@ -207,6 +279,18 @@
         } else save(null);
     }
 
+    // --- EXCLUIR LIVRO ---
+    function deleteBook(idx, event) {
+        event.stopPropagation();
+        // Usando o novo confirm customizado. A lógica de exclusão agora é uma função callback.
+        appConfirm(`Deseja excluir o livro "${db.books[idx].name}"?`, () => {
+            db.books.splice(idx, 1);
+            updateDB();
+            renderShelf();
+        });
+    }
+
+    // --- EDITAR CAPA ---
     function openEditCover(idx, event) {
         event.stopPropagation();
         bookToEditIdx = idx;
@@ -217,7 +301,7 @@
     function saveEditedCover() {
         const fileInput = document.getElementById('new-cover-file');
         const file = fileInput.files[0];
-        if(!file) return alert("Selecione uma imagem.");
+        if(!file) return appAlert("Selecione uma imagem."); // Usando o novo alert customizado
 
         const reader = new FileReader();
         reader.onload = function() {
@@ -227,6 +311,7 @@
         reader.readAsDataURL(file);
     }
 
+    // --- RENDERIZAR ESTANTE ---
     function renderShelf() {
         const shelf = document.getElementById('shelf');
         shelf.innerHTML = '';
@@ -240,15 +325,19 @@
                     <div class="book-details">
                         <div class="book-title">${book.name}</div>
                         <div class="book-author">${book.author}</div>
-                        <div style="font-size:0.75rem; color:var(--primary); margin-top:5px; font-weight:bold;">Parou na Pág: ${book.page}</div>
+                        <div style="font-size:0.75rem; color:var(--primary); margin-top:5px; font-weight:bold;">Pág: ${book.page}</div>
                     </div>
                 </div>
-                <button class="btn-edit-cover" onclick="openEditCover(${idx}, event)">✎</button>
+                <div class="actions">
+                    <button class="btn-action btn-edit" onclick="openEditCover(${idx}, event)" title="Editar Capa">✎</button>
+                    <button class="btn-action btn-delete" onclick="deleteBook(${idx}, event)" title="Excluir Livro">🗑</button>
+                </div>
             `;
             shelf.appendChild(item);
         });
     }
 
+    // --- LEITOR DE PDF ---
     async function openReader(idx) {
         activeBookIdx = idx;
         const book = db.books[idx];
@@ -277,14 +366,9 @@
         if(n >= 1 && n <= currentPdfDoc.numPages) { currentPageNum = n; renderPage(); }
     }
 
-    function showView(id) {
-        ['auth-section', 'shelf-section', 'reader-section'].forEach(v => document.getElementById(v).classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    }
-    function updateDB() { localStorage.setItem('reader_db_purple', JSON.stringify(db)); }
     function backToShelf() { showView('shelf-section'); renderShelf(); }
-    function logout() { location.reload(); }
 </script>
 
 </body>
 </html>
+2
