@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Livros PDF - Estante Digital</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        /* PALETA DE CORES ROXO CLARO */
+        :root { 
+            --primary: #9b59b6; /* Roxo Claro Principal */
+            --primary-dark: #8e44ad; 
+            --bg: #f5f6fa; 
+            --white: #ffffff; 
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
+        .hidden { display: none !important; }
+        
+        /* AUTH SECTION - Onde você pediu a mudança */
+        #auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--white); }
+        .card { width: 320px; padding: 2rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(155, 89, 182, 0.1); text-align: center; border: 1px solid #eee; }
+        .app-title { color: var(--primary); font-size: 1.8rem; font-weight: bold; margin-bottom: 1.5rem; }
+        
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #f0f0f0; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+        
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        
+        .link { color: var(--primary); cursor: pointer; font-size: 0.85rem; margin-top: 15px; display: block; text-decoration: none; font-weight: 500; }
+        .link:hover { text-decoration: underline; }
+
+        /* ESTANTE EM LISTA */
+        header { background: var(--white); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10; }
+        #shelf { padding: 20px 5%; display: flex; flex-direction: column; gap: 15px; }
+        
+        .book-item { background: white; display: flex; align-items: center; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s; position: relative; }
+        .book-item:hover { transform: scale(1.02); box-shadow: 0 8px 15px rgba(155, 89, 182, 0.1); }
+        
+        .clickable-area { display: flex; align-items: center; flex-grow: 1; cursor: pointer; }
+        .book-cover-mini { width: 65px; height: 95px; object-fit: cover; border-radius: 8px; margin-right: 20px; background: #f0f0f0; }
+        
+        .book-title { font-weight: bold; font-size: 1.1rem; color: #2d3436; margin-bottom: 4px; }
+        .book-author { font-size: 0.9rem; color: #636e72; }
+
+        .btn-edit-cover { background: #f3f0f7; border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; color: var(--primary); transition: 0.3s; }
+        .btn-edit-cover:hover { background: var(--primary); color: white; }
+
+        /* MODAIS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
+        /* LEITOR */
+        #reader-section { background: #121212; min-height: 100vh; }
+        #reader-view { display: flex; justify-content: center; padding: 20px 0 100px 0; }
+        canvas { max-width: 100%; height: auto; background: white; box-shadow: 0 0 50px rgba(0,0,0,0.6); }
+        .nav-controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--white); padding: 12px 30px; border-radius: 50px; display: flex; gap: 20px; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+<div id="auth-section">
+    <div id="auth-container">
+        <div class="card" id="login-form">
+            <div class="app-title">Meus Livros PDF</div>
+            <input type="email" id="email" placeholder="E-mail">
+            <input type="password" id="pass" placeholder="Senha">
+            <button onclick="login()">Entrar</button>
+            <span class="link" onclick="toggleAuth('register')">Criar conta gratuita</span>
+            <span class="link" onclick="forgotPassword()">Esqueceu a senha?</span>
+        </div>
+        <div class="card hidden" id="register-form">
+            <div class="app-title">Cadastrar</div>
+            <input type="email" id="reg-email" placeholder="Seu melhor e-mail">
+            <input type="password" id="reg-pass" placeholder="Crie uma senha">
+            <button onclick="register()">Finalizar Cadastro</button>
+            <span class="link" onclick="toggleAuth('login')">Já tenho uma conta</span>
+        </div>
+    </div>
+</div>
+
+<div id="shelf-section" class="hidden">
+    <header>
+        <div style="font-size: 1.4rem; font-weight: bold; color: var(--primary);">Meus Livros PDF</div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="openModal('add-modal')" style="width: auto; padding: 8px 18px; border-radius: 20px;">+ Adicionar</button>
+            <button onclick="logout()" style="width: auto; background: #666; padding: 8px 18px; border-radius: 20px;">Sair</button>
+        </div>
+    </header>
+
+    <div id="shelf"></div>
+
+    <div id="add-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="color: var(--primary)">Novo Livro</h3>
+            <label style="font-size: 0.8rem; color: #777;">1. Arquivo PDF</label>
+            <input type="file" id="pdf-file" accept="application/pdf" onchange="autoFillMeta(this)">
+            <input type="text" id="book-name" placeholder="Título do Livro">
+            <input type="text" id="book-author" placeholder="Autor">
+            <label style="font-size: 0.8rem; color: #777; margin-top: 10px; display: block;">2. Imagem de Capa (Opcional)</label>
+            <input type="file" id="cover-file" accept="image/*">
+            <button onclick="saveNewBook()">Salvar na Estante</button>
+            <button onclick="closeModal('add-modal')" style="background: #eee; color: #333; margin-top: 8px;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="edit-cover-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="color: var(--primary)">Trocar Capa</h3>
+            <p id="edit-book-title" style="font-size: 0.9rem; font-weight: bold; color: #555;"></p>
+            <input type="file" id="new-cover-file" accept="image/*">
+            <button onclick="saveEditedCover()">Atualizar Imagem</button>
+            <button onclick="closeModal('edit-cover-modal')" style="background: #eee; color: #333; margin-top: 8px;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="reader-section" class="hidden">
+    <header style="background: #1a1a1a; border: none; color: white;">
+        <button onclick="backToShelf()" style="width: auto; background: transparent; color: white;">← Voltar</button>
+        <div id="reading-title" style="font-size: 0.9rem; opacity: 0.8;">Lendo...</div>
+        <div style="width: 50px;"></div>
+    </header>
+    <div id="reader-view">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+    <div class="nav-controls">
+        <button onclick="changePage(-1)" style="width: auto; background: #f0f0f0; color: #333; padding: 10px 20px;">Anterior</button>
+        <span id="page-info" style="font-weight: bold; color: var(--primary);">Pág: 1 / 1</span>
+        <button onclick="changePage(1)" style="width: auto; background: #f0f0f0; color: #333; padding: 10px 20px;">Próxima</button>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('reader_db_purple')) || { users: [], books: [] };
+    let currentUser = null;
+    let currentPdfDoc = null;
+    let currentPageNum = 1;
+    let activeBookIdx = null;
+    let bookToEditIdx = null;
+    let tempPdfBase64 = null;
+
+    function toggleAuth(view) {
+        document.getElementById('login-form').classList.toggle('hidden', view === 'register');
+        document.getElementById('register-form').classList.toggle('hidden', view === 'login');
+    }
+
+    function register() {
+        const e = document.getElementById('reg-email').value;
+        const p = document.getElementById('reg-pass').value;
+        if(e && p) {
+            db.users.push({ email: e, pass: p });
+            updateDB();
+            alert("Cadastro realizado!");
+            toggleAuth('login');
+        }
+    }
+
+    function login() {
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('pass').value;
+        const u = db.users.find(user => user.email === e && user.pass === p);
+        if(u) { currentUser = u; showView('shelf-section'); renderShelf(); }
+        else { alert("E-mail ou senha incorretos."); }
+    }
+
+    function forgotPassword() {
+        const email = prompt("Digite seu e-mail cadastrado para redefinir:");
+        const user = db.users.find(u => u.email === email);
+        if(user) {
+            const newPass = prompt("Usuário validado! Digite sua nova senha:");
+            if(newPass) { user.pass = newPass; updateDB(); alert("Senha atualizada com sucesso!"); }
+        } else if(email) alert("E-mail não encontrado.");
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    async function autoFillMeta(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async function() {
+            tempPdfBase64 = this.result;
+            const pdf = await pdfjsLib.getDocument(tempPdfBase64).promise;
+            const meta = await pdf.getMetadata();
+            document.getElementById('book-name').value = meta.info.Title || file.name.replace('.pdf', '');
+            document.getElementById('book-author').value = meta.info.Author || "Autor Desconhecido";
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function saveNewBook() {
+        const name = document.getElementById('book-name').value;
+        const author = document.getElementById('book-author').value;
+        const coverInput = document.getElementById('cover-file').files[0];
+        if(!tempPdfBase64 || !name) return alert("Por favor, selecione o PDF.");
+
+        const save = (c) => {
+            db.books.push({ owner: currentUser.email, name, author, pdf: tempPdfBase64, cover: c || '', page: 1 });
+            updateDB(); renderShelf(); closeModal('add-modal'); tempPdfBase64 = null;
+        };
+
+        if(coverInput) {
+            const r = new FileReader(); r.onload = () => save(r.result); r.readAsDataURL(coverInput);
+        } else save(null);
+    }
+
+    function openEditCover(idx, event) {
+        event.stopPropagation();
+        bookToEditIdx = idx;
+        document.getElementById('edit-book-title').innerText = db.books[idx].name;
+        openModal('edit-cover-modal');
+    }
+
+    function saveEditedCover() {
+        const fileInput = document.getElementById('new-cover-file');
+        const file = fileInput.files[0];
+        if(!file) return alert("Selecione uma imagem.");
+
+        const reader = new FileReader();
+        reader.onload = function() {
+            db.books[bookToEditIdx].cover = reader.result;
+            updateDB(); renderShelf(); closeModal('edit-cover-modal');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function renderShelf() {
+        const shelf = document.getElementById('shelf');
+        shelf.innerHTML = '';
+        db.books.forEach((book, idx) => {
+            if(book.owner !== currentUser.email) return;
+            const item = document.createElement('div');
+            item.className = 'book-item';
+            item.innerHTML = `
+                <div class="clickable-area" onclick="openReader(${idx})">
+                    <img class="book-cover-mini" src="${book.cover || 'https://via.placeholder.com/70x100/9b59b6/ffffff?text=LIVRO'}">
+                    <div class="book-details">
+                        <div class="book-title">${book.name}</div>
+                        <div class="book-author">${book.author}</div>
+                        <div style="font-size:0.75rem; color:var(--primary); margin-top:5px; font-weight:bold;">Parou na Pág: ${book.page}</div>
+                    </div>
+                </div>
+                <button class="btn-edit-cover" onclick="openEditCover(${idx}, event)">✎</button>
+            `;
+            shelf.appendChild(item);
+        });
+    }
+
+    async function openReader(idx) {
+        activeBookIdx = idx;
+        const book = db.books[idx];
+        currentPageNum = book.page || 1;
+        showView('reader-section');
+        document.getElementById('reading-title').innerText = book.name;
+        const loading = pdfjsLib.getDocument(book.pdf);
+        currentPdfDoc = await loading.promise;
+        renderPage();
+    }
+
+    async function renderPage() {
+        const page = await currentPdfDoc.getPage(currentPageNum);
+        const canvas = document.getElementById('pdf-canvas');
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        document.getElementById('page-info').innerText = `Pág: ${currentPageNum} / ${currentPdfDoc.numPages}`;
+        db.books[activeBookIdx].page = currentPageNum;
+        updateDB();
+    }
+
+    function changePage(dir) {
+        const n = currentPageNum + dir;
+        if(n >= 1 && n <= currentPdfDoc.numPages) { currentPageNum = n; renderPage(); }
+    }
+
+    function showView(id) {
+        ['auth-section', 'shelf-section', 'reader-section'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function updateDB() { localStorage.setItem('reader_db_purple', JSON.stringify(db)); }
+    function backToShelf() { showView('shelf-section'); renderShelf(); }
+    function logout() { location.reload(); }
+</script>
+
+</body>
+</html>
